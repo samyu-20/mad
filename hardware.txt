@@ -1,0 +1,193 @@
+androidmanifest.xml:
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Mad">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+
+mainactivity.kt:
+package com.example.mad
+
+import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.content.Context
+import android.content.Intent
+import android.net.wifi.WifiManager
+import android.os.Build
+import android.os.Bundle
+import android.provider.MediaStore
+import android.telephony.SmsManager
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var wifiManager: WifiManager
+    private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val btnCamera = findViewById<Button>(R.id.btnCamera)
+        val btnWifi = findViewById<Button>(R.id.btnWifi)
+        val btnBluetooth = findViewById<Button>(R.id.btnBluetooth)
+        val btnSMS = findViewById<Button>(R.id.btnSMS)
+
+        val editPhone = findViewById<EditText>(R.id.editPhone)
+        val editMsg = findViewById<EditText>(R.id.editMsg)
+
+        wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+        // Request permissions
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.SEND_SMS,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ),
+            1
+        )
+
+        // CAMERA
+        btnCamera.setOnClickListener {
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            startActivity(intent)
+        }
+
+        // WIFI
+        btnWifi.setOnClickListener {
+            wifiManager.isWifiEnabled = !wifiManager.isWifiEnabled
+            toast("WiFi: " + if (wifiManager.isWifiEnabled) "ON" else "OFF")
+        }
+
+        // BLUETOOTH
+        btnBluetooth.setOnClickListener {
+            if (bluetoothAdapter == null) {
+                toast("Bluetooth not supported")
+            } else {
+                if (!bluetoothAdapter.isEnabled) {
+                    val enableBt = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                    startActivity(enableBt)
+                } else {
+                    bluetoothAdapter.disable()
+                    toast("Bluetooth OFF")
+                }
+            }
+        }
+
+        // SMS
+        btnSMS.setOnClickListener {
+            val number = editPhone.text.toString()
+            val message = editMsg.text.toString()
+
+            if (number.isNotEmpty() && message.isNotEmpty()) {
+                sendSMS(number, message)
+            } else {
+                toast("Enter number & message")
+            }
+        }
+    }
+
+    private fun sendSMS(number: String, message: String) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.SEND_SMS), 1)
+            return
+        }
+
+        try {
+            val smsManager = SmsManager.getDefault()
+            smsManager.sendTextMessage(number, null, message, null, null)
+            toast("SMS Sent")
+        } catch (e: Exception) {
+            toast("SMS Failed")
+        }
+    }
+
+    private fun toast(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    }
+}
+
+activity_main.xml:
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/btnCamera"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Open Camera"/>
+
+    <Button
+        android:id="@+id/btnWifi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Toggle WiFi"
+        android:layout_marginTop="10dp"/>
+
+    <Button
+        android:id="@+id/btnBluetooth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Toggle Bluetooth"
+        android:layout_marginTop="10dp"/>
+
+    <EditText
+        android:id="@+id/editPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Phone Number"
+        android:inputType="phone"
+        android:layout_marginTop="15dp"/>
+
+    <EditText
+        android:id="@+id/editMsg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Message"
+        android:layout_marginTop="10dp"/>
+
+    <Button
+        android:id="@+id/btnSMS"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Send SMS"
+        android:layout_marginTop="10dp"/>
+
+</LinearLayout>
