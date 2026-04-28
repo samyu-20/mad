@@ -1,0 +1,127 @@
+geocoder:
+activity_main.xml:
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/editLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Location Name"/>
+
+    <Button
+        android:id="@+id/btnGetLatLng"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Lat and Lng"
+        android:layout_marginTop="10dp"/>
+
+    <Button
+        android:id="@+id/btnGetAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Address (Sample)"
+        android:layout_marginTop="10dp"/>
+
+    <TextView
+        android:id="@+id/txtResult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Result"
+        android:textSize="16sp"
+        android:layout_marginTop="20dp"/>
+
+</LinearLayout>
+
+mainactivity.kt:
+package com.example.mad
+
+import android.os.Bundle
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import android.location.Geocoder
+import java.util.*
+
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val editLocation = findViewById<EditText>(R.id.editLocation)
+        val btnGetLatLng = findViewById<Button>(R.id.btnGetLatLng)
+        val btnGetAddress = findViewById<Button>(R.id.btnGetAddress)
+        val txtResult = findViewById<TextView>(R.id.txtResult)
+
+        val geocoder = Geocoder(this, Locale.getDefault())
+
+        // LOCATION → LAT/LNG
+        btnGetLatLng.setOnClickListener {
+            val location = editLocation.text.toString()
+
+            try {
+                val list = geocoder.getFromLocationName(location, 1)
+                if (list != null && list.isNotEmpty()) {
+                    val address = list[0]
+                    val lat = address.latitude
+                    val lng = address.longitude
+
+                    txtResult.text = "Lat: $lat\nLng: $lng"
+                } else {
+                    txtResult.text = "Location not found"
+                }
+            } catch (e: Exception) {
+                txtResult.text = "Error: ${e.message}"
+            }
+        }
+
+        // LAT/LNG → ADDRESS (Sample coordinates)
+        btnGetAddress.setOnClickListener {
+            try {
+                val list = geocoder.getFromLocation(9.8808, 78.0700, 1)
+
+                if (list != null && list.isNotEmpty()) {
+                    val address = list[0]
+                    txtResult.text = address.getAddressLine(0)
+                } else {
+                    txtResult.text = "Address not found"
+                }
+            } catch (e: Exception) {
+                txtResult.text = "Error: ${e.message}"
+            }
+        }
+    }
+}
+
+android manifest:
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Mad">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
